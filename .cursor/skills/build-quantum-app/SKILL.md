@@ -26,7 +26,7 @@ npm run preview
 
 | Layer | File | Owns |
 |-------|------|------|
-| Math | `src/qubit.ts` | `QubitState`, `GateName`, `zeroState`, `applyGate`, `toBloch`, formatters |
+| Math | `src/qubit.ts` | `QubitState`, `GateName`, `zeroState`, `applyGate`, `getGateMatrix`, `toBloch`, formatters |
 | Render | `src/blochSphere.ts` | `createBlochSphere()` → `{ group, setBlochVector }`, `blochToThree` |
 | UI / state | `src/ui.ts` | Mutable ket + θ; gate buttons; `getState` / `setState` |
 | Compose | `src/main.ts` | Scene, camera, OrbitControls; wires UI → sphere |
@@ -50,6 +50,15 @@ ui.ts (state)
 
 Always call `toBloch` before `setBlochVector`. Mutate state through `setState` (or keep the same `onStateChange` path) so the arrow and readout stay in sync.
 
+## Gate matrix
+
+Clicking a gate applies it **and** shows its 2×2 unitary in the panel (`#gate-matrix`).
+
+- Math: `getGateMatrix(name, angle)` + `formatMatrix` in `qubit.ts` (UI only displays the string).
+- Track `lastGate` in `ui.ts`. For `Rx` / `Ry` / `Rz`, moving θ refreshes the matrix without re-applying the gate.
+- Reset clears the matrix (placeholder: “Select a gate”).
+- New gates: once `GateName` + `gateMatrix` are wired, the matrix display follows automatically.
+
 ## Coordinate contract
 
 README / visual convention:
@@ -66,7 +75,7 @@ Use `blochToThree`: Bloch `(x, y, z)` → Three `(x, z, y)` (Y-up). **Never** ma
 
 ### New gate
 
-1. Add to `GateName` and `gateMatrix` in `qubit.ts`.
+1. Add to `GateName` and `gateMatrix` in `qubit.ts` (panel matrix uses `getGateMatrix` automatically).
 2. If the UI should expose it, append to `PAULI_GATES`, `PHASE_GATES`, or `ROTATION_GATES` in `ui.ts`.
 3. Rotation gates use `angle` from the θ slider (`π/n`, `n` ∈ 1…32).
 

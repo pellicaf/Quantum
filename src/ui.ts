@@ -2,6 +2,8 @@ import {
   applyGate,
   formatBloch,
   formatKet,
+  formatMatrix,
+  getGateMatrix,
   toBloch,
   zeroState,
   type GateName,
@@ -11,6 +13,8 @@ import {
 const PAULI_GATES: GateName[] = ['X', 'Y', 'Z', 'H']
 const PHASE_GATES: GateName[] = ['S', 'T', 'S†', 'T†']
 const ROTATION_GATES: GateName[] = ['Rx', 'Ry', 'Rz']
+
+const MATRIX_PLACEHOLDER = 'Select a gate'
 
 export type UiCallbacks = {
   onStateChange: (state: QubitState) => void
@@ -24,6 +28,7 @@ export type UiController = {
 export function createUi(root: HTMLElement, callbacks: UiCallbacks): UiController {
   let state = zeroState()
   let angle = Math.PI / 8
+  let lastGate: GateName | null = null
 
   root.innerHTML = `
     <h1>Bloch Sphere</h1>
@@ -31,6 +36,9 @@ export function createUi(root: HTMLElement, callbacks: UiCallbacks): UiControlle
 
     <h2>State</h2>
     <div class="readout" id="readout"></div>
+
+    <h2>Gate matrix</h2>
+    <div class="readout" id="gate-matrix">${MATRIX_PLACEHOLDER}</div>
 
     <h2>Pauli / Hadamard</h2>
     <div class="gate-grid" id="pauli-gates"></div>
@@ -55,6 +63,7 @@ export function createUi(root: HTMLElement, callbacks: UiCallbacks): UiControlle
   `
 
   const readout = root.querySelector('#readout') as HTMLElement
+  const gateMatrixEl = root.querySelector('#gate-matrix') as HTMLElement
   const angleInput = root.querySelector('#angle') as HTMLInputElement
   const angleOut = root.querySelector('#angle-out') as HTMLOutputElement
 
@@ -67,11 +76,22 @@ export function createUi(root: HTMLElement, callbacks: UiCallbacks): UiControlle
     const n = Number(angleInput.value)
     angle = Math.PI / n
     angleOut.value = angleLabel(n)
+    if (lastGate && ROTATION_GATES.includes(lastGate)) {
+      refreshMatrix()
+    }
   }
 
   function refreshReadout(): void {
     const bloch = toBloch(state)
     readout.textContent = `${formatKet(state)}\n${formatBloch(bloch)}`
+  }
+
+  function refreshMatrix(): void {
+    if (!lastGate) {
+      gateMatrixEl.textContent = MATRIX_PLACEHOLDER
+      return
+    }
+    gateMatrixEl.textContent = `${lastGate}\n${formatMatrix(getGateMatrix(lastGate, angle))}`
   }
 
   function setState(next: QubitState): void {
@@ -87,7 +107,9 @@ export function createUi(root: HTMLElement, callbacks: UiCallbacks): UiControlle
       btn.type = 'button'
       btn.textContent = name
       btn.addEventListener('click', () => {
+        lastGate = name
         setState(applyGate(state, name, angle))
+        refreshMatrix()
       })
       el.appendChild(btn)
     }
@@ -99,11 +121,14 @@ export function createUi(root: HTMLElement, callbacks: UiCallbacks): UiControlle
 
   angleInput.addEventListener('input', syncAngle)
   root.querySelector('#reset')!.addEventListener('click', () => {
+    lastGate = null
     setState(zeroState())
+    refreshMatrix()
   })
 
   syncAngle()
   refreshReadout()
+  refreshMatrix()
   callbacks.onStateChange(state)
 
   return {

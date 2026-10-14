@@ -19,7 +19,7 @@ export type GateName =
   | 'Ry'
   | 'Rz'
 
-type Matrix2 = [[Complex, Complex], [Complex, Complex]]
+export type Matrix2 = [[Complex, Complex], [Complex, Complex]]
 
 const c = (re: number, im = 0): Complex => ({ re, im })
 
@@ -152,6 +152,13 @@ function gateMatrix(name: GateName, angle: number): Matrix2 {
   }
 }
 
+export function getGateMatrix(
+  name: GateName,
+  angle = Math.PI / 8,
+): Matrix2 {
+  return gateMatrix(name, angle)
+}
+
 export function applyGate(
   state: QubitState,
   name: GateName,
@@ -167,6 +174,14 @@ function fmtComplex(z: Complex, digits = 3): string {
   if (Math.abs(re) < 5e-4) return `${im}i`
   const sign = im >= 0 ? '+' : '-'
   return `${re}${sign}${Math.abs(im)}i`
+}
+
+export function formatMatrix(m: Matrix2): string {
+  const a = fmtComplex(m[0][0])
+  const b = fmtComplex(m[0][1])
+  const c0 = fmtComplex(m[1][0])
+  const d = fmtComplex(m[1][1])
+  return `[[ ${a}, ${b} ],\n [ ${c0}, ${d} ]]`
 }
 
 export function formatKet(state: QubitState): string {
